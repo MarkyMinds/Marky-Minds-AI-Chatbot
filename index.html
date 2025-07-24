@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marky Minds AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba[0, 0, 0, 0.1];
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 500px;
+        }
+        .chat-header {
+            background-color: #4f46e5; /* Indigo 600 */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #e0e7ff; /* Indigo 100 */
+            align-self: flex-end;
+            color: #1e3a8a; /* Darker blue for text */
+        }
+        .ai-message {
+            background-color: #e2e8f0; /* Gray 200 */
+            align-self: flex-start;
+            color: #334155; /* Slate 700 */
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            gap: 0.75rem;
+        }
+        .chat-input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1; /* Slate 300 */
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .chat-input:focus {
+            border-color: #4f46e5; /* Indigo 600 */
+        }
+        .send-button {
+            background-color: #4f46e5; /* Indigo 600 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+        }
+        .send-button:hover {
+            background-color: #4338ca; /* Indigo 700 */
+            transform: translateY(-1px);
+        }
+        .send-button:active {
+            transform: translateY(0);
+        }
+        .loading-indicator {
+            text-align: center;
+            padding: 1rem;
+            color: #64748b; /* Slate 500 */
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Marky Minds AI Assistant
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="ai-message message">Hello! I'm your AI assistant. I can help answer questions about our digital marketing agency's pricing, services, and requirements. What would you like to know?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Ask a question...">
+            <button id="sendButton" class="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatMessages = document.getElementById('chatMessages');
+
+        // A simplified "knowledge base" for demonstration.
+        // In a real application, this would be a sophisticated vector database.
+        const agencyKnowledge = {
+            "pricing": "Our pricing for digital marketing services varies based on the scope and duration of the project, including factors like the number of website pages and business competition. We offer tiered packages for SEO, social media management, and paid advertising. For a detailed quote, please provide more information about your specific needs.",
+            "services": "We offer a comprehensive suite of digital marketing services, including Search Engine Optimization (SEO), Social Media Marketing (SMM), Paid Advertising (PPC), Content Marketing, Email Marketing, and Website Design/Development. We can tailor a package to suit your business goals.",
+            "requirements": "To get started, we typically require access to your current website analytics (e.g., Google Analytics), social media accounts, and any existing marketing materials. We'll also need to understand your target audience, business goals, and competitive landscape. A discovery call is usually the first step to gather these details.",
+            "seo": "Our SEO pricing depends on the number of pages on your website and the competition in your business niche. We aim to improve your organic search rankings and drive qualified traffic to your website.",
+            "sem": "Our SEM (Search Engine Marketing) services are priced at 5000 INR. This includes campaign creation, ongoing optimization, and detailed tracking reports to ensure your ads perform effectively.",
+            "wordpress website": "For a WordPress website, a 5-8 page website is approximately 7000 INR, which includes domain registration and hosting. For a larger 10-15 page website, the cost is around 12000 INR, also including domain registration and hosting.",
+            "social media": "Our social media management covers content creation, scheduling, community engagement, and performance analytics across platforms like Facebook, Instagram, LinkedIn, and Twitter.",
+            "paid advertising": "Our paid advertising services involve campaign strategy, ad creation, targeting, bid management, and performance tracking on platforms like Google Ads and social media ad networks.",
+            "content marketing": "Our content marketing services focus on creating valuable, relevant, and consistent content to attract and retain a clearly defined audience — and, ultimately, to drive profitable customer action. This includes blog posts, articles, videos, and infographics.",
+            "email marketing": "We design and execute email campaigns to nurture leads, engage customers, and drive sales. This includes newsletter creation, automation setup, and performance analysis.",
+            "website design": "Our website design and development services create responsive, user-friendly, and SEO-optimized websites tailored to your brand and business objectives.",
+            "contact": "You can contact us at +91 7305151629, email us at markyminds1@gmail.com.",
+            "contact": "Hi, how can I help you?",
+            "default": "I'm sorry, I don't have enough information to answer that. Could you please rephrase your question or ask about our pricing, services, or requirements?"
+        };
+
+        function appendMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            if (sender === 'user') {
+                messageDiv.classList.add('user-message');
+            } else {
+                messageDiv.classList.add('ai-message');
+            }
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        }
+
+        async function getAiResponse(userQuery) {
+            // Simulate knowledge base retrieval (very basic keyword matching for demo)
+            let context = agencyKnowledge.default;
+            const lowerCaseQuery = userQuery.toLowerCase();
+
+            // Prioritize more specific keywords
+            if (lowerCaseQuery.includes("wordpress website")) {
+                context = agencyKnowledge["wordpress website"];
+            } else if (lowerCaseQuery.includes("sem")) {
+                context = agencyKnowledge["sem"];
+            } else if (lowerCaseQuery.includes("seo")) {
+                context = agencyKnowledge["seo"];
+            } else if (lowerCaseQuery.includes("pricing")) {
+                context = agencyKnowledge["pricing"];
+            } else if (lowerCaseQuery.includes("services")) {
+                context = agencyKnowledge["services"];
+            } else if (lowerCaseQuery.includes("requirements")) {
+                context = agencyKnowledge["requirements"];
+            } else if (lowerCaseQuery.includes("social media")) {
+                context = agencyKnowledge["social media"];
+            } else if (lowerCaseQuery.includes("paid advertising") || lowerCaseQuery.includes("ppc")) {
+                context = agencyKnowledge["paid advertising"];
+            } else if (lowerCaseQuery.includes("content marketing")) {
+                context = agencyKnowledge["content marketing"];
+            } else if (lowerCaseQuery.includes("email marketing")) {
+                context = agencyKnowledge["email marketing"];
+            } else if (lowerCaseQuery.includes("website design") || lowerCaseQuery.includes("website development")) {
+                context = agencyKnowledge["website design"];
+            } else if (lowerCaseQuery.includes("contact")) {
+                context = agencyKnowledge["contact"];
+            }
+
+
+            // Construct the prompt for the LLM
+            // We instruct the LLM to use the provided context.
+            const prompt = `You are an AI assistant for a digital marketing agency. Your goal is to answer customer questions accurately and concisely, *using only the provided context*. If the context does not contain the answer, state that you don't have enough information.\n\nContext about the agency: ${context}\n\nCustomer question: ${userQuery}\n\nAgency AI Assistant:`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will automatically provide the API key
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    return "I apologize, but I couldn't generate a response based on the information I have.";
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return "I'm currently experiencing technical difficulties. Please try again later.";
+            }
+        }
+
+        sendButton.addEventListener('click', async () => {
+            const userQuery = chatInput.value.trim();
+            if (userQuery) {
+                appendMessage('user', userQuery);
+                chatInput.value = '';
+                sendButton.disabled = true; // Disable button while AI thinks
+
+                const loadingDiv = document.createElement('div');
+                loadingDiv.classList.add('loading-indicator');
+                loadingDiv.textContent = 'AI is thinking...';
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                const aiResponse = await getAiResponse(userQuery);
+
+                chatMessages.removeChild(loadingDiv); // Remove loading indicator
+                appendMessage('ai', aiResponse);
+                sendButton.disabled = false; // Re-enable button
+            }
+        });
+
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
